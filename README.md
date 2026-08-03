@@ -78,3 +78,37 @@ With those in place the layout heuristic alone gets all 10 of the sample papers 
 The suite is self-contained: extraction runs against three small PDFs committed under
 `tests/pdf/`, and the API tests use a mocked transport. No network and no local corpus
 required.
+
+## Releasing
+
+CI runs the suite on Python 3.10–3.13 for every push and PR.
+
+Publishing to PyPI happens only when a **GitHub Release is published** — a tag push
+alone does nothing. The release job builds an sdist and wheel, runs `twine check
+--strict`, verifies the tag matches the version in `pyproject.toml`, and uploads via
+PyPI Trusted Publishing (OIDC), so no API token is stored anywhere.
+
+One-time setup on PyPI, at <https://pypi.org/manage/account/publishing/>, add a pending
+publisher:
+
+| Field | Value |
+|---|---|
+| PyPI project | `arxiv-title` |
+| Owner | `cms-pm` |
+| Repository | `arxiv-title` |
+| Workflow | `release.yml` |
+| Environment | `pypi` |
+
+Then create a matching GitHub environment named `pypi` under Settings → Environments.
+Repeat with `testpypi` on test.pypi.org if you want the dry-run path.
+
+To cut a release:
+
+```sh
+# bump version in pyproject.toml, commit, then
+git tag v0.1.0 && git push origin v0.1.0
+gh release create v0.1.0 --generate-notes
+```
+
+To rehearse without touching PyPI, run the Release workflow manually with the `testpypi`
+target.
