@@ -1,0 +1,11 @@
+# Sample corpus: ~34MB of arXiv PDFs. The extraction tests read from here and skip
+# cleanly when it is absent, so a fresh clone still runs the suite.
+artifacts/
+
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
