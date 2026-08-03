@@ -1,4 +1,8 @@
-"""Extraction tests against the real sample corpus in ``artifacts/``."""
+"""Extraction tests against the committed PDF fixtures in ``tests/pdf/``.
+
+These three papers are checked in so the suite is self-contained on a fresh clone. The
+wider ``artifacts/`` corpus is gitignored and not required here.
+"""
 
 from pathlib import Path
 
@@ -6,63 +10,60 @@ import pytest
 
 from arxiv_title.sources.pdf_text import title_from_layout, title_from_metadata
 
-ARTIFACTS = Path(__file__).resolve().parent.parent / "artifacts"
+FIXTURES = Path(__file__).resolve().parent / "pdf"
 
-pytestmark = pytest.mark.skipif(
-    not ARTIFACTS.is_dir(), reason="sample corpus not present"
-)
-
-# Expected titles, verified against the arXiv API.
+# Titles verified against the arXiv API.
 EXPECTED = {
-    "2101.05536v1": "Scaling Equilibrium Propagation to Deep ConvNets",
-    "2207.00708v1": "Parameter efficient dendritic-tree neurons outperform perceptrons",
-    "2509.26507v1": "Dragon Hatchling",
-    "2511.18424v1": "CrossJEPA",
-    "2605.08135v1": "Dendritic Neural Networks with Equilibrium Propagation",
-    "2606.24851v3": "Real vs. Complex Spectral Bases for Neural Operators",
     "2606.30789v2": "Predictable GRPO: A Closed-Form Model of Training Dynamics",
-    "2606.30930v1": "SGD at the Edge of Stability",
-    "2606.32026v1": "AdaJEPA: An Adaptive Latent World Model",
-    "2607.00286v1": "Self-Organized Learning in Oscillatory Neural Networks",
+    "2606.31137v1": (
+        "A Bayesian Filtering Approach for Learning Lagrangian Dynamics "
+        "from Noisy Measurements"
+    ),
+    "2607.22653v1": (
+        "Do Language Models Converge to Themselves? "
+        "Recursive Self-Refinement as Textual Relaxation"
+    ),
 }
 
-# These four are set in LaTeX small caps or with an enlarged leading capital. A
-# largest-glyph rule reduces them to a single character; the weighted-dominant-size and
-# baseline-clustering rules are what make them work.
-SMALL_CAPS_CASES = ["2605.08135v1", "2606.30930v1", "2511.18424v1", "2606.30789v2"]
+# 2606.30789v2 sets its title with an enlarged leading capital. Under a largest-glyph
+# rule the extracted title collapsed to "G"; it is the regression guard for both the
+# character-count-weighted size rule and baseline clustering.
+SMALL_CAPS_CASE = "2606.30789v2"
+
+
+def fixture(stem: str) -> Path:
+    return FIXTURES / f"{stem}.pdf"
 
 
 @pytest.mark.parametrize("stem", sorted(EXPECTED))
-def test_layout_extraction_matches_expected_title(stem):
-    title = title_from_layout(ARTIFACTS / f"{stem}.pdf")
-    assert title is not None
-    assert EXPECTED[stem].lower() in title.lower()
+def test_layout_extraction_matches_canonical_title(stem):
+    assert title_from_layout(fixture(stem)) == EXPECTED[stem]
 
 
-@pytest.mark.parametrize("stem", SMALL_CAPS_CASES)
-def test_small_caps_titles_are_not_truncated_to_one_glyph(stem):
-    title = title_from_layout(ARTIFACTS / f"{stem}.pdf")
+@pytest.mark.parametrize("stem", sorted(EXPECTED))
+def test_metadata_extraction_matches_canonical_title(stem):
+    assert title_from_metadata(fixture(stem)) == EXPECTED[stem]
+
+
+def test_small_caps_title_is_not_truncated_to_one_glyph():
+    title = title_from_layout(fixture(SMALL_CAPS_CASE))
     assert title is not None and len(title) > 20
 
 
 def test_layout_inserts_spaces_between_words():
-    title = title_from_layout(ARTIFACTS / "2606.32026v1.pdf")
-    assert title == "AdaJEPA: An Adaptive Latent World Model"
+    # Guards the gap threshold in the other direction: too small a threshold and the
+    # words run together as "PredictableGRPO:AClosed-FormModel...".
+    title = title_from_layout(fixture(SMALL_CAPS_CASE))
+    assert " " in title
+    assert "PredictableGRPO" not in title
 
 
-def test_layout_rejoins_small_caps_runs_without_spurious_spaces():
-    # "T" + "HE" are separate words only because their font sizes differ.
-    title = title_from_layout(ARTIFACTS / "2509.26507v1.pdf")
-    assert title.upper().startswith("THE DRAGON HATCHLING")
-
-
-def test_metadata_covers_most_of_the_corpus():
-    found = {
-        stem: title_from_metadata(ARTIFACTS / f"{stem}.pdf") for stem in EXPECTED
-    }
-    # 2101.05536v1 ships an empty /Title; the rest are populated.
-    assert found["2101.05536v1"] is None
-    assert all(v for k, v in found.items() if k != "2101.05536v1")
+def test_layout_rejoins_titles_wrapped_across_lines():
+    # This title spans more than one line in the PDF and must come back as one string.
+    title = title_from_layout(fixture("2606.31137v1"))
+    assert title.startswith("A Bayesian Filtering Approach")
+    assert title.endswith("from Noisy Measurements")
+    assert "\n" not in title
 
 
 def test_metadata_is_none_for_missing_file(tmp_path):

@@ -75,5 +75,6 @@ With those in place the layout heuristic alone gets all 10 of the sample papers 
 .venv/bin/python -m pytest
 ```
 
-The extraction tests run against the real PDFs in `artifacts/`; the API tests use a
-mocked transport and need no network.
+The suite is self-contained: extraction runs against three small PDFs committed under
+`tests/pdf/`, and the API tests use a mocked transport. No network and no local corpus
+required.

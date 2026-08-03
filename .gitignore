@@ -1,5 +1,5 @@
-# Sample corpus: ~34MB of arXiv PDFs. The extraction tests read from here and skip
-# cleanly when it is absent, so a fresh clone still runs the suite.
+# Working corpus: ~34MB of arXiv PDFs, not needed by the tests. The extraction tests
+# use the small committed fixtures in tests/pdf/ instead.
 artifacts/
 
 .venv/
