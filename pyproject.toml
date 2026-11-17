@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arxiv-title"
-version = "0.1.0"
+version = "0.2.0"
 description = "Rename arXiv PDFs from opaque IDs to descriptive, title-based filenames"
 readme = "README.md"
 license = "MIT"
@@ -38,6 +38,8 @@ Issues = "https://github.com/cms-pm/arxiv-title/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+# `--markdown` shells out to the markitdown CLI; it is not needed otherwise.
+markdown = ["markitdown[pdf]>=0.1"]
 
 [project.scripts]
 arxiv-title = "arxiv_title.cli:main"

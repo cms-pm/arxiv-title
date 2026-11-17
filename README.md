@@ -21,6 +21,7 @@ arxiv-title artifacts/                 # rename every arXiv-named PDF in a direc
 arxiv-title -n artifacts/              # --dry-run: preview, touch nothing
 arxiv-title --offline artifacts/       # no network; use the PDFs alone
 arxiv-title 2101.05536v1.pdf           # a single file
+arxiv-title -m artifacts/              # rename, then also write a .md beside each PDF
 ```
 
 | Flag | Effect |
@@ -30,11 +31,31 @@ arxiv-title 2101.05536v1.pdf           # a single file
 | `-r`, `--recursive` | Descend into subdirectories |
 | `--force` | Accept titles that were only guessed from page layout |
 | `--no-id-prefix` | Emit `how_frogs_croak.pdf` instead of `2101.05536v1_how_frogs_croak.pdf` |
+| `-m`, `--markdown` | Also convert each file with `markitdown FILE.pdf -o FILE.md` |
+| `--overwrite-markdown` | Re-convert even when the `.md` already exists |
 | `-v`, `--verbose` | Show which source supplied each title |
 
 Only files whose name *starts* with an arXiv identifier are considered when scanning a
 directory; anything else is left alone. Because the ID is kept as a prefix by default, a
 second run over an already-renamed directory is a clean no-op.
+
+## Markdown conversion
+
+`--markdown` runs [markitdown](https://github.com/microsoft/markitdown) on each file
+*after* the rename, so the `.md` lands beside the PDF under the same descriptive name:
+
+```
+2101.05536v1_scaling_equilibrium_propagation.pdf
+2101.05536v1_scaling_equilibrium_propagation.md
+```
+
+It is an external CLI, not a library dependency — install it with
+`pip install "arxiv-title[markdown]"` or `pip install "markitdown[pdf]"`. The run aborts
+early if it is not on `PATH`.
+
+Files that already have a `.md` are left alone, so re-running is cheap; pass
+`--overwrite-markdown` to force. Files held back as low-confidence are not converted,
+and `--dry-run` reports the conversions it would perform without running anything.
 
 ## How the title is found
 
